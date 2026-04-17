@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>INSTANTOWN - Official Signage Build</title>
+    <title>INSTANTOWN - Live Sync Build</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { 
@@ -16,11 +16,9 @@
         .screen { display: none; width: 100%; min-height: 90vh; }
         .active { display: block; }
         
-        /* GRID 6 CATEGORIE */
         .grid-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; max-width: 450px; margin: 0 auto; }
         .cat-card { height: 110px; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; color: #000; text-transform: uppercase; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
-        /* VETRINA CON INSEGNA RICHIESTA */
         .offer-container { padding: 20px; max-width: 450px; margin: 0 auto; }
         .offer-card { background: white; color: #000; border-radius: 25px; overflow: hidden; border: 3px solid var(--gold); }
         .gallery-wrapper { position: relative; width: 100%; height: 250px; background: #000; }
@@ -35,12 +33,19 @@
         .dot.active { background: white; }
 
         #map { width: 100%; height: 60vh; background: #222; }
-        .walking-omino { transform: scaleX(-1); } /* Omino guarda a destra verso la meta */
+        .walking-omino { transform: scaleX(-1); }
         .btn-main { width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; margin-top: 10px; background: var(--blue-gov); color: white; }
         .back-btn { color: var(--neon); background: none; border: none; padding: 15px; font-weight: bold; cursor: pointer; }
+        
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); display: flex; justify-content: center; align-items: center; z-index: 3000; flex-direction: column; }
     </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+    <div style="font-weight: 900; color: var(--gold); font-size: 24px;">INSTANTOWN</div>
+    <div style="color: var(--neon); font-size: 12px; margin-top: 10px;">Sincronizzazione Dati Diplomatici...</div>
+</div>
 
 <header>
     <div>
@@ -50,7 +55,7 @@
 </header>
 
 <div id="VIEW_HOME" class="screen active">
-    <div style="text-align:center; margin: 30px 0 10px; font-weight: 900; color: var(--neon);">MODALITÀ CONSUMATORE</div>
+    <div style="text-align:center; margin: 30px 0 10px; font-weight: 900; color: var(--neon);">AREA SICURA AMBASCIATE</div>
     <div class="grid-cats">
         <div class="cat-card" style="background:var(--cat-ali)" onclick="navTo('VIEW_OFFER')">ALIMENTARE</div>
         <div class="cat-card" style="background:var(--cat-ele)" onclick="navTo('VIEW_OFFER')">ELETTRONICA</div>
@@ -69,7 +74,7 @@
                 <button class="nav-arrow arrow-left" onclick="moveGallery(-1)">&#10094;</button>
                 <button class="nav-arrow arrow-right" onclick="moveGallery(1)">&#10095;</button>
                 <div class="gallery" id="mainGallery">
-                    <img src="https://www.insegneantiche.it/wp-content/uploads/2016/07/www20140103_130151.jpg">
+                    <img id="img-insegna" src="">
                     <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80">
                     <img src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80">
                     <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=600&q=80">
@@ -77,11 +82,11 @@
                 <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
             </div>
             <div style="padding: 20px;">
-                <div style="font-size: 11px; font-weight: bold; color: var(--blue-gov); letter-spacing: 1px;">LOCALE: CAFFÈ ROMA ANNI '30</div>
-                <h2 style="margin: 5px 0;">COLAZIONE PREMIUM</h2>
-                <div style="font-size: 28px; font-weight: 900; color: #e11d48;">€ 2.00 <small style="font-size:14px; text-decoration:line-through; color:#999;">€ 3.50</small></div>
-                <p style="font-size: 11px; color: #666; margin: 10px 0;">Identifica l'insegna in ferro battuto della prima foto per trovare il locale.</p>
-                <button class="btn-main" onclick="startNavigation()">BLOCCA E RAGGIUNGI (140m)</button>
+                <div style="font-size: 11px; font-weight: bold; color: var(--blue-gov); border-bottom: 2px solid var(--gold); display: inline-block;">LOCALE: <span id="loc-name">CARICAMENTO...</span></div>
+                <h2 style="margin: 10px 0 5px 0;" id="offer-title">COLAZIONE PREMIUM</h2>
+                <div style="font-size: 28px; font-weight: 900; color: #e11d48;" id="main-price">€ --.-- <small id="old-price" style="font-size:14px; text-decoration:line-through; color:#999;">€ --.--</small></div>
+                <p style="font-size: 11px; color: #666; margin: 10px 0;">Identificazione visiva certificata tramite l'insegna esterna.</p>
+                <button class="btn-main" onclick="startNavigation()">BLOCCA E VAI (GPS LIVE)</button>
             </div>
         </div>
     </div>
@@ -90,15 +95,44 @@
 <div id="VIEW_MAP" class="screen">
     <div id="map"></div>
     <div style="padding: 15px; text-align:center; background:var(--bg-dark);">
-        <div id="dist-val" style="font-size: 22px; color: #ef4444; font-weight: 900;">DISTANZA: 140M</div>
+        <div id="dist-val" style="font-size: 22px; color: #ef4444; font-weight: 900;">CALCOLO PERCORSO...</div>
         <button class="btn-main" style="background:#333;" onclick="navTo('VIEW_HOME')">ANNULLA</button>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const START = [41.9234, 12.4913]; const END = [41.9246, 12.4925];   
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTyXyWkrRnIX3dkt01edy-CSvOE_Tqmtwd8H7frysdsUkwKFSzE5oxBItEnseyCKzZ2Y7GhS9pLBs4p/pub?gid=812280271&single=true&output=csv';
+    
+    // Dati di default
+    let START = [41.9234, 12.4913]; 
+    let END = [41.9246, 12.4925];   
     let map, marker;
+
+    async function syncData() {
+        try {
+            const response = await fetch(SHEET_URL);
+            const csvText = await response.text();
+            const rows = csvText.split('\n').map(row => row.split(','));
+            
+            // Prendiamo l'ultima riga (l'offerta più recente)
+            const latest = rows[rows.length - 1];
+            
+            // Mapping: A:Timestamp, B:ID, C:Nome, D:Lat, E:Lng, F:Foto, G:Pieno, H:Sconto
+            document.getElementById('loc-name').innerText = latest[2];
+            document.getElementById('img-insegna').src = latest[5].trim();
+            document.getElementById('main-price').innerHTML = `€ ${latest[7]} <small style="font-size:14px; text-decoration:line-through; color:#999;">€ ${latest[6]}</small>`;
+            
+            // Aggiorna coordinate fine percorso
+            END = [parseFloat(latest[3]), parseFloat(latest[4])];
+            
+            // Nascondi caricamento
+            document.getElementById('loading-overlay').style.display = 'none';
+        } catch (e) {
+            console.error("Errore sync:", e);
+            document.getElementById('loading-overlay').innerHTML = "Errore connessione Sheet.";
+        }
+    }
 
     function navTo(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -111,25 +145,16 @@
         gal.scrollBy({ left: direction * gal.offsetWidth, behavior: 'smooth' });
     }
 
-    const gallery = document.getElementById('mainGallery');
-    gallery.addEventListener('scroll', () => {
-        const index = Math.round(gallery.scrollLeft / gallery.offsetWidth);
-        document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === index));
-    });
-
     function initMap() {
         if (!map) {
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(START, 18);
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(START, 17);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-            L.polyline([START, END], { color: '#ef4444', weight: 6 }).addTo(map);
-            let ominoIcon = L.divIcon({
-                className: 'walking-omino',
-                html: '<div style="font-size:35px; transform: scaleX(-1);">🚶‍♂️</div>',
-                iconSize:[40,40], iconAnchor:[20,35]
-            });
-            marker = L.marker(START, {icon: ominoIcon}).addTo(map);
+            L.polyline([START, END], { color: '#ef4444', weight: 6, opacity: 0.8 }).addTo(map);
+            marker = L.marker(START, {icon: L.divIcon({className: 'walking-omino', html: '<div style="font-size:35px; transform: scaleX(-1);">🚶‍♂️</div>', iconSize:[40,40], iconAnchor:[20,35]})}).addTo(map);
             L.marker(END, {icon: L.divIcon({html:'📍', iconSize:[30,30]})}).addTo(map);
-        } else { marker.setLatLng(START); }
+        } else {
+            marker.setLatLng(START);
+        }
     }
 
     function startNavigation() {
@@ -140,11 +165,17 @@
             let lat = START[0] + (END[0] - START[0]) * progress;
             let lng = START[1] + (END[1] - START[1]) * progress;
             marker.setLatLng([lat, lng]);
-            let m = Math.floor(140 * (1 - progress));
-            document.getElementById('dist-val').innerText = m > 0 ? "DISTANZA: " + m + "M" : "ARRIVATO";
-            if(progress >= 1) clearInterval(interval);
+            if(progress >= 1) {
+                clearInterval(interval);
+                document.getElementById('dist-val').innerText = "ARRIVATO AL LOCALE";
+            } else {
+                document.getElementById('dist-val').innerText = "IN MOVIMENTO VERSO L'INSEGNA";
+            }
         }, 50);
     }
+
+    // Caricamento iniziale
+    window.onload = syncData;
 </script>
 </body>
 </html>
