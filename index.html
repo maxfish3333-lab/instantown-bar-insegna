@@ -3,179 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>INSTANTOWN - Live Sync Build</title>
+    <title>INSTANTOWN - DIPLOMATIC V5</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { 
-            --bg-dark: #0a0e14; --blue-gov: #1a365d; --neon: #39ff14; --gold: #d4af37; 
-            --cat-ali: #ef4444; --cat-ele: #fbbf24; --cat-casa: #22d3ee;
-            --cat-div: #f97316; --cat-via: #ffffff; --cat-var: #4b5563;
-        }
-        body { background: var(--bg-dark); font-family: 'Segoe UI', sans-serif; margin: 0; color: white; overflow-x: hidden; }
-        header { width: 100%; background: var(--blue-gov); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 2000; }
+        :root { --bg: #0a0e14; --blue: #1a365d; --neon: #39ff14; --gold: #d4af37; --danger: #ef4444; }
+        body { background: var(--bg); font-family: 'Segoe UI', sans-serif; margin: 0; color: white; overflow-x: hidden; }
+        header { background: var(--blue); padding: 12px; border-bottom: 2px solid var(--gold); text-align: center; }
         .screen { display: none; width: 100%; min-height: 90vh; }
         .active { display: block; }
         
+        /* GRIGLIA CATEGORIE */
         .grid-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; max-width: 450px; margin: 0 auto; }
-        .cat-card { height: 110px; border-radius: 25px; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; color: #000; text-transform: uppercase; font-size: 13px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .cat-card { height: 100px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; color: #000; font-size: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
-        .offer-container { padding: 20px; max-width: 450px; margin: 0 auto; }
-        .offer-card { background: white; color: #000; border-radius: 25px; overflow: hidden; border: 3px solid var(--gold); }
-        .gallery-wrapper { position: relative; width: 100%; height: 250px; background: #000; }
-        .gallery { width: 100%; height: 100%; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; }
-        .gallery::-webkit-scrollbar { display: none; }
-        .gallery img { width: 100%; height: 100%; flex-shrink: 0; scroll-snap-align: start; object-fit: cover; }
-        
-        .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.6); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
-        .arrow-left { left: 10px; } .arrow-right { right: 10px; }
-        .dots { position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: center; gap: 8px; }
-        .dot { width: 7px; height: 7px; background: rgba(255,255,255,0.4); border-radius: 50%; }
-        .dot.active { background: white; }
+        /* SCHEDA OFFERTA */
+        .offer-card { background: white; color: #000; margin: 15px; border-radius: 20px; overflow: hidden; border: 3px solid var(--gold); }
+        .img-box { width: 100%; height: 200px; background: #222; position: relative; }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
 
-        #map { width: 100%; height: 60vh; background: #222; }
-        .walking-omino { transform: scaleX(-1); }
-        .btn-main { width: 100%; padding: 18px; border-radius: 15px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; margin-top: 10px; background: var(--blue-gov); color: white; }
-        .back-btn { color: var(--neon); background: none; border: none; padding: 15px; font-weight: bold; cursor: pointer; }
-        
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); display: flex; justify-content: center; align-items: center; z-index: 3000; flex-direction: column; }
+        /* MAPPA */
+        #map { width: 100%; height: 60vh; background: #111; }
+        .nav-info { padding: 15px; text-align: center; background: var(--bg); border-top: 2px solid var(--gold); }
+        .status-badge { display: inline-block; padding: 8px 15px; border-radius: 20px; font-weight: 900; margin-top: 5px; font-size: 12px; border: 2px solid white; }
+        .btn-main { background: var(--blue); color: white; width: 90%; padding: 16px; border-radius: 15px; border: none; font-weight: 900; font-size: 16px; cursor: pointer; margin: 10px 0; }
+        .back-btn { background: none; border: none; color: var(--neon); padding: 15px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">
-    <div style="font-weight: 900; color: var(--gold); font-size: 24px;">INSTANTOWN</div>
-    <div style="color: var(--neon); font-size: 12px; margin-top: 10px;">Sincronizzazione Dati Diplomatici...</div>
-</div>
-
 <header>
-    <div>
-        <div style="font-size: 8px; color: var(--gold); letter-spacing: 1px;">ROME DIPLOMATIC PROTOCOL</div>
-        <div style="font-weight: 900; font-size: 20px;">INSTANTOWN</div>
-    </div>
+    <div style="font-size: 9px; color: var(--gold); letter-spacing: 2px; font-weight: bold;">DIPLOMATIC PROTOCOL</div>
+    <div style="font-weight: 900; font-size: 20px;">INSTANTOWN</div>
 </header>
 
 <div id="VIEW_HOME" class="screen active">
-    <div style="text-align:center; margin: 30px 0 10px; font-weight: 900; color: var(--neon);">AREA SICURA AMBASCIATE</div>
+    <div style="text-align:center; margin: 20px 0; font-weight: 900; color: var(--neon);">SELEZIONA CATEGORIA SICURA</div>
     <div class="grid-cats">
-        <div class="cat-card" style="background:var(--cat-ali)" onclick="navTo('VIEW_OFFER')">ALIMENTARE</div>
-        <div class="cat-card" style="background:var(--cat-ele)" onclick="navTo('VIEW_OFFER')">ELETTRONICA</div>
-        <div class="cat-card" style="background:var(--cat-casa)" onclick="navTo('VIEW_OFFER')">CASA</div>
-        <div class="cat-card" style="background:var(--cat-div); color:white" onclick="navTo('VIEW_OFFER')">DIVERTIMENTO</div>
-        <div class="cat-card" style="background:var(--cat-via)" onclick="navTo('VIEW_OFFER')">VIAGGI</div>
-        <div class="cat-card" style="background:var(--cat-var); color:white" onclick="navTo('VIEW_OFFER')">VARIE</div>
+        <div class="cat-card" style="background:#ef4444" onclick="navTo('VIEW_OFFER')">ALIMENTARE</div>
+        <div class="cat-card" style="background:#fbbf24" onclick="navTo('VIEW_OFFER')">ELETTRONICA</div>
+        <div class="cat-card" style="background:#22d3ee" onclick="navTo('VIEW_OFFER')">CASA</div>
+        <div class="cat-card" style="background:#f97316; color:white" onclick="navTo('VIEW_OFFER')">DIVERTIMENTO</div>
+        <div class="cat-card" style="background:#ffffff" onclick="navTo('VIEW_OFFER')">VIAGGI</div>
+        <div class="cat-card" style="background:#4b5563; color:white" onclick="navTo('VIEW_OFFER')">VARIE</div>
     </div>
 </div>
 
 <div id="VIEW_OFFER" class="screen">
-    <button class="back-btn" onclick="navTo('VIEW_HOME')">← CATEGORIE</button>
-    <div class="offer-container">
-        <div class="offer-card">
-            <div class="gallery-wrapper">
-                <button class="nav-arrow arrow-left" onclick="moveGallery(-1)">&#10094;</button>
-                <button class="nav-arrow arrow-right" onclick="moveGallery(1)">&#10095;</button>
-                <div class="gallery" id="mainGallery">
-                    <img id="img-insegna" src="">
-                    <img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80">
-                    <img src="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80">
-                    <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=600&q=80">
-                </div>
-                <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-            </div>
-            <div style="padding: 20px;">
-                <div style="font-size: 11px; font-weight: bold; color: var(--blue-gov); border-bottom: 2px solid var(--gold); display: inline-block;">LOCALE: <span id="loc-name">CARICAMENTO...</span></div>
-                <h2 style="margin: 10px 0 5px 0;" id="offer-title">COLAZIONE PREMIUM</h2>
-                <div style="font-size: 28px; font-weight: 900; color: #e11d48;" id="main-price">€ --.-- <small id="old-price" style="font-size:14px; text-decoration:line-through; color:#999;">€ --.--</small></div>
-                <p style="font-size: 11px; color: #666; margin: 10px 0;">Identificazione visiva certificata tramite l'insegna esterna.</p>
-                <button class="btn-main" onclick="startNavigation()">BLOCCA E VAI (GPS LIVE)</button>
-            </div>
+    <button class="back-btn" onclick="navTo('VIEW_HOME')">← TORNA ALLE CATEGORIE</button>
+    <div class="offer-card">
+        <div class="img-box">
+            <img id="img-sheet" src="https://i.ibb.co/L6vMvY0/caffe-roma-insegna.jpg">
+            <div style="position:absolute; bottom:0; width:100%; background:rgba(26,54,93,0.9); color:white; font-size:10px; padding:6px; text-align:center;">FOTO INSEGNA CERTIFICATA</div>
+        </div>
+        <div style="padding: 20px;">
+            <div id="name-sheet" style="color: var(--blue); font-weight: 900; text-transform: uppercase; font-size: 14px;">CARICAMENTO...</div>
+            <h2 style="margin: 5px 0; font-size: 18px;">OFFERTA RISERVATA</h2>
+            <div id="price-sheet" style="font-size: 28px; font-weight: 900; color: var(--danger);">€ --.--</div>
+            <button class="btn-main" onclick="navTo('VIEW_MAP')">RAGGIUNGI E SBLOCCA</button>
         </div>
     </div>
 </div>
 
 <div id="VIEW_MAP" class="screen">
     <div id="map"></div>
-    <div style="padding: 15px; text-align:center; background:var(--bg-dark);">
-        <div id="dist-val" style="font-size: 22px; color: #ef4444; font-weight: 900;">CALCOLO PERCORSO...</div>
-        <button class="btn-main" style="background:#333;" onclick="navTo('VIEW_HOME')">ANNULLA</button>
+    <div class="nav-info">
+        <div id="dist-text" style="font-size: 22px; font-weight: 900; color: var(--danger);">DISTANZA: -- M</div>
+        <div id="lock-status" class="status-badge" style="background: var(--danger); color: white;">FONDI BLOCCATI (ESCROW)</div>
+        <button onclick="startSim()" id="btn-start" class="btn-main" style="background: var(--neon); color: black;">AVVIA NAVIGAZIONE</button>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTyXyWkrRnIX3dkt01edy-CSvOE_Tqmtwd8H7frysdsUkwKFSzE5oxBItEnseyCKzZ2Y7GhS9pLBs4p/pub?gid=812280271&single=true&output=csv';
-    
-    // Dati di default
+    const CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS95gpF260Q6hoggDbOKz9a65dSa0XmlFIAtmDSAJPTRMlCHXtGLZg28CkqIzhuo9-0fzpLnyCDsHD5/pub?output=csv';
     let START = [41.9234, 12.4913]; 
-    let END = [41.9246, 12.4925];   
-    let map, marker;
+    let END = [41.9246, 12.4925];
+    let map, marker, circle;
 
-    async function syncData() {
+    async function loadData() {
         try {
-            const response = await fetch(SHEET_URL);
-            const csvText = await response.text();
-            const rows = csvText.split('\n').map(row => row.split(','));
+            const resp = await fetch(CSV);
+            const data = await resp.text();
+            const rows = data.split('\n').map(r => r.split(','));
+            const last = rows[rows.length - 1];
             
-            // Prendiamo l'ultima riga (l'offerta più recente)
-            const latest = rows[rows.length - 1];
-            
-            // Mapping: A:Timestamp, B:ID, C:Nome, D:Lat, E:Lng, F:Foto, G:Pieno, H:Sconto
-            document.getElementById('loc-name').innerText = latest[2];
-            document.getElementById('img-insegna').src = latest[5].trim();
-            document.getElementById('main-price').innerHTML = `€ ${latest[7]} <small style="font-size:14px; text-decoration:line-through; color:#999;">€ ${latest[6]}</small>`;
-            
-            // Aggiorna coordinate fine percorso
-            END = [parseFloat(latest[3]), parseFloat(latest[4])];
-            
-            // Nascondi caricamento
-            document.getElementById('loading-overlay').style.display = 'none';
-        } catch (e) {
-            console.error("Errore sync:", e);
-            document.getElementById('loading-overlay').innerHTML = "Errore connessione Sheet.";
-        }
+            document.getElementById('name-sheet').innerText = "LOCALE: " + last[2];
+            document.getElementById('price-sheet').innerText = "€ " + last[7];
+            if(last[5] && last[5].includes('http')) document.getElementById('img-sheet').src = last[5].trim();
+            END = [parseFloat(last[3]), parseFloat(last[4])];
+        } catch(e) { console.error("Errore collegamento Sheet"); }
     }
 
     function navTo(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        if(id === 'VIEW_MAP') initMap();
-    }
-
-    function moveGallery(direction) {
-        const gal = document.getElementById('mainGallery');
-        gal.scrollBy({ left: direction * gal.offsetWidth, behavior: 'smooth' });
+        if(id === 'VIEW_MAP') setTimeout(initMap, 200);
     }
 
     function initMap() {
-        if (!map) {
-            map = L.map('map', { zoomControl: false, attributionControl: false }).setView(START, 17);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-            L.polyline([START, END], { color: '#ef4444', weight: 6, opacity: 0.8 }).addTo(map);
-            marker = L.marker(START, {icon: L.divIcon({className: 'walking-omino', html: '<div style="font-size:35px; transform: scaleX(-1);">🚶‍♂️</div>', iconSize:[40,40], iconAnchor:[20,35]})}).addTo(map);
-            L.marker(END, {icon: L.divIcon({html:'📍', iconSize:[30,30]})}).addTo(map);
-        } else {
-            marker.setLatLng(START);
-        }
+        if (map) map.remove();
+        map = L.map('map', {zoomControl: false}).setView(START, 18);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        circle = L.circle(END, { radius: 15, color: 'red', weight: 4, fillColor: '#f03', fillOpacity: 0.4 }).addTo(map);
+        L.polyline([START, END], {color: 'red', weight: 3, dashArray: '5, 10'}).addTo(map);
+
+        const ominoIcon = L.divIcon({
+            html: '<div style="font-size: 50px; transform: scaleX(-1);">🚶‍♂️</div>',
+            className: 'omino', iconSize: [50, 50], iconAnchor: [25, 45]
+        });
+        marker = L.marker(START, {icon: ominoIcon}).addTo(map);
+        L.marker(END).addTo(map);
     }
 
-    function startNavigation() {
-        navTo('VIEW_MAP');
-        let progress = 0;
+    function startSim() {
+        document.getElementById('btn-start').style.display = 'none';
+        let step = 0;
+        const frames = 200;
         const interval = setInterval(() => {
-            progress += 0.005;
+            step++;
+            let progress = step / frames;
             let lat = START[0] + (END[0] - START[0]) * progress;
             let lng = START[1] + (END[1] - START[1]) * progress;
-            marker.setLatLng([lat, lng]);
-            if(progress >= 1) {
-                clearInterval(interval);
-                document.getElementById('dist-val').innerText = "ARRIVATO AL LOCALE";
-            } else {
-                document.getElementById('dist-val').innerText = "IN MOVIMENTO VERSO L'INSEGNA";
+            let pos = L.latLng(lat, lng);
+            marker.setLatLng(pos);
+            map.panTo(pos); 
+            let dist = pos.distanceTo(L.latLng(END));
+            document.getElementById('dist-text').innerText = "DISTANZA: " + Math.round(dist) + " M";
+            if (dist <= 15) {
+                circle.setStyle({color: '#39ff14', fillColor: '#39ff14'});
+                document.getElementById('lock-status').innerText = "AREA VALIDATA - FONDI RILASCIATI";
+                document.getElementById('lock-status').style.background = "var(--neon)";
+                document.getElementById('lock-status').style.color = "black";
             }
+            if (step >= frames) clearInterval(interval);
         }, 50);
     }
-
-    // Caricamento iniziale
-    window.onload = syncData;
+    window.onload = loadData;
 </script>
 </body>
 </html>
